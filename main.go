@@ -11,8 +11,6 @@ import (
 
 type Vector struct {
 	v [3]int  // x, y, z
-	minV [3]int
-	maxV [3]int
 }
 
 type Moon struct {
@@ -34,28 +32,67 @@ const (
 )
 
 func main() {
-	part1()
+	part2()
 }
 
 func part1() {
+	var steps int
 	moons, _ := GetMoons(strings.NewReader(test1))
-	for steps := 1; steps <= 10; steps++ {
+	PrintMoons(moons, 0)
+	for steps = 1; steps <= 1386; steps++ {
 		CalcVelocities(moons)
 		MoveMoons(moons)
 	}
-	PrintMoons(moons)
+	PrintMoons(moons, steps-1)
 	PrintEnergy(moons)
-	PrintRanges(moons)
 }
 
 func part2() {
-	moons, _ := GetMoons(strings.NewReader(test1))
-	for steps := 1; steps <= 1000; steps++ {
+	var steps int
+	moons, _ := GetMoons(strings.NewReader(data))
+	PrintMoons(moons, 0)
+	init := append([]Moon(nil), moons...)
+	per := make([]int, 3)
+	for steps = 1; per[0] == 0 || per[1] == 0 || per[2] == 0; steps++ {
 		CalcVelocities(moons)
 		MoveMoons(moons)
+		for p := range per {
+			if per[p] == 0 {
+				for i := range moons {
+					if moons[i].Velocity.v[p] != init[i].Velocity.v[p] {
+						break
+					}
+					if i == len(moons) - 1 {
+						per[p] = steps * 2
+					}
+				}
+			}
+		}
 	}
-	PrintMoons(moons)
-	PrintEnergy(moons)
+	fmt.Println(lcm(per...))
+	PrintMoons(moons, steps)
+}
+
+func gcd(x ...int) int {
+	if len(x) == 0 {
+		return 0
+	} else if len(x) == 2 {
+		for x[1] != 0 {
+			x[0], x[1] = x[1], x[0]%x[1]
+		}
+	} else if len(x) > 2 {
+		return gcd(x[0], gcd(x[1:]...))
+	}
+	return abs(x[0])
+}
+
+func lcm(x ...int) int {
+	if len(x) > 2 {
+		return lcm(x[0], lcm(x[1:]...))
+	} else if x[0] == 0 && x[1] == 0 {
+		return 0
+	}
+	return abs(x[0]*x[1]) / gcd(x[0], x[1])
 }
 
 func PrintEnergy(moons []Moon) {
@@ -68,23 +105,12 @@ func PrintEnergy(moons []Moon) {
 	fmt.Println(e)
 }
 
-func PrintMoons(moons []Moon) {
+func PrintMoons(moons []Moon, steps int) {
+	fmt.Printf("After %d steps:\n", steps)
 	for l := 0; l < len(moons); l++ {
-		fmt.Printf("pos=<x=%3d, y=%3d, z=%3d>, vel=<x=%3d, y=%3d, z=%3d>\n",
+		fmt.Printf("\tpos=<x=%3d, y=%3d, z=%3d>, vel=<x=%3d, y=%3d, z=%3d>\n",
 			moons[l].Position.v[0],moons[l].Position.v[1],moons[l].Position.v[2],
 			moons[l].Velocity.v[0],moons[l].Velocity.v[1],moons[l].Velocity.v[2])
-	}
-}
-
-func PrintRanges(moons []Moon) {
-	for l := 0; l < len(moons); l++ {
-		fmt.Printf("pos=<x=%3d⋯%3d, y=%3d⋯%3d, z=%3d⋯%3d>, vel=<x=%3d⋯%3d, y=%3d⋯%3d, z=%3d⋯%3d>\n",
-			moons[l].Position.minV[0], moons[l].Position.maxV[0],
-			moons[l].Position.minV[1], moons[l].Position.maxV[1],
-			moons[l].Position.minV[2], moons[l].Position.maxV[2],
-			moons[l].Velocity.minV[0], moons[l].Velocity.maxV[0],
-			moons[l].Velocity.minV[1], moons[l].Velocity.maxV[1],
-			moons[l].Velocity.minV[2], moons[l].Velocity.maxV[2])
 	}
 }
 
@@ -113,16 +139,6 @@ func MoveMoons(moons []Moon) {
 		a := &moons[l]
 		for i := 0; i < 3; i++ {
 			a.Position.v[i] += a.Velocity.v[i]
-			if a.Position.v[i] < a.Position.minV[i] {
-				a.Position.minV[i] = a.Position.v[i]
-			} else if a.Position.v[i] > a.Position.maxV[i] {
-				a.Position.maxV[i] = a.Position.v[i]
-			}
-			if a.Velocity.v[i] < a.Velocity.minV[i] {
-				a.Velocity.minV[i] = a.Velocity.v[i]
-			} else if a.Velocity.v[i] > a.Velocity.maxV[i] {
-				a.Velocity.maxV[i] = a.Velocity.v[i]
-			}
 		}
 	}
 }
